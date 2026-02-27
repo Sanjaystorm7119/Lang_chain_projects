@@ -13,3 +13,5 @@ langchain-text-splitters
 fastapi
 chromadb
 langchain-chroma
+sentence-transformers
+langchain_huggingface
