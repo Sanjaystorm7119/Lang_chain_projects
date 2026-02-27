@@ -1,0 +1,15 @@
+langchain
+ipykernel
+langsmith
+python-dotenv
+openai
+langchain-openai
+langchain-community
+langchain-core
+bs4
+pymupdf
+langgraph
+langchain-text-splitters
+fastapi
+chromadb
+langchain-chroma
