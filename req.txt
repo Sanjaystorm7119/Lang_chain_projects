@@ -16,3 +16,4 @@ langchain-chroma
 sentence-transformers
 langchain_huggingface
 faiss-cpu
+beautifulsoup4
