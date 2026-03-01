@@ -13,7 +13,7 @@ load_dotenv()
 # os.environ['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 os.environ['GROQ_API_KEY'] = os.getenv('GROQ_API_KEY')
 
-groq_model = ChatGroq(model="llama3.2")
+groq_model = ChatGroq(model="llama-3.3-70b-versatile")
 
 prompt = ChatPromptTemplate.from_messages(
     [
