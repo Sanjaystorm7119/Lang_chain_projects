@@ -13,6 +13,14 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 
+
+"""
+MessagesPlaceholder  →  Empty glass (just a container slot)
+ChatMessageHistory   →  Water (the actual stored messages)
+RunnableWithHistory  →  Person who fills & refills the glass automatically
+BaseChatMessageHistory → Blueprint to make your own bottle (Redis, DB, etc.)
+"""
+
 # Initialize the model
 chatGroq_model = ChatGroq(model="llama-3.3-70b-versatile")
 
