@@ -4,13 +4,15 @@ A comprehensive collection of projects exploring Generative AI, Document Process
 
 ## 📂 Project Structure
 
-| Project                   | Notebook                                             | Documentation                           | Description                                             |
-| :------------------------ | :--------------------------------------------------- | :-------------------------------------- | :------------------------------------------------------ |
-| **01. LangChain Basics**  | [1langchain.ipynb](./1langchain.ipynb)               | [README](./README_1langchain.md)        | Document Loaders (PDF, Web, Text) and Text Splitters.   |
-| **02. OpenAI Embeddings** | [2embeddings.ipynb](./2embeddings.ipynb)             | [README](./README_2embeddings.md)       | Vector embeddings using OpenAI and storage in ChromaDB. |
-| **03. Local Ollama**      | [3ollamaembeddings.ipynb](./3ollamaembeddings.ipynb) | [README](./README_3ollamaembeddings.md) | Privacy-focused local embeddings using Ollama.          |
-| **04. Hugging Face**      | [4huggingace.ipynb](./4huggingace.ipynb)             | [README](./README_4huggingace.md)       | Open-source state-of-the-art embedding models.          |
-| **05. FAISS Indexing**    | [5faiss.ipynb](./5faiss.ipynb)                       | [README](./README_5faiss.md)            | High-performance vector search using Meta's FAISS.      |
+| Project                      | Notebook                                             | Documentation                           | Description                                                              |
+| :--------------------------- | :--------------------------------------------------- | :-------------------------------------- | :----------------------------------------------------------------------- |
+| **01. LangChain Basics**     | [1langchain.ipynb](./1langchain.ipynb)               | [README](./README_1langchain.md)        | Document Loaders (PDF, Web, Text) and Text Splitters.                    |
+| **02. OpenAI Embeddings**    | [2embeddings.ipynb](./2embeddings.ipynb)             | [README](./README_2embeddings.md)       | Vector embeddings using OpenAI and storage in ChromaDB.                  |
+| **03. Local Ollama**         | [3ollamaembeddings.ipynb](./3ollamaembeddings.ipynb) | [README](./README_3ollamaembeddings.md) | Privacy-focused local embeddings using Ollama.                           |
+| **04. Hugging Face**         | [4huggingace.ipynb](./4huggingace.ipynb)             | [README](./README_4huggingace.md)       | Open-source state-of-the-art embedding models.                           |
+| **05. FAISS Indexing**       | [5faiss.ipynb](./5faiss.ipynb)                       | [README](./README_5faiss.md)            | High-performance vector search using Meta's FAISS.                       |
+| **11. LangServe Deployment** | [11langserve.py](./11langserve.py)                   | -                                       | Deploying LangChain chains as REST APIs with LangServe.                  |
+| **12. Groq Chat App**        | [12App.py](./12App.py)                               | [README](./README_12App.md)             | Interactive Chat App with session history & message trimming using Groq. |
 
 ## 🛠️ Global Setup
 

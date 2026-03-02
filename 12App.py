@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, trim_messages
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
@@ -12,7 +12,8 @@ from langchain_core.prompts.chat import SystemMessagePromptTemplate, HumanMessag
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
-
+from operator import itemgetter
+from langchain.runnables import RunnablePassthrough
 
 """
 MessagesPlaceholder  →  Empty glass (just a container slot)
@@ -23,6 +24,18 @@ BaseChatMessageHistory → Blueprint to make your own bottle (Redis, DB, etc.)
 
 # Initialize the model
 chatGroq_model = ChatGroq(model="llama-3.3-70b-versatile")
+
+#trim messages
+
+trimmer = trim_messages(
+    max_tokens=3000,
+    strategy="last",
+    token_counter=chatGroq_model,
+    include_system=True,
+    start_on="human",
+    allow_partial=False
+)
+
 
 # Create a generic system + human prompt template
 prompt = ChatPromptTemplate.from_messages([
@@ -36,7 +49,13 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 parser = StrOutputParser()
-chain = prompt | chatGroq_model | parser
+# chain = prompt | chatGroq_model | parser
+
+chain = (
+RunnablePassthrough.assign(
+    messages = itemgetter("messages") | trimmer
+) | prompt | chatGroq_model | RunnablePassthrough() | parser
+)
 
 
 store = {}
