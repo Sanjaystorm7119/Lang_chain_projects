@@ -39,3 +39,19 @@ dict_= {"a":1,"b":{"d":3,"e":5}}
 # a = [1,2,3,4]
 # a[0:3] = [1]*3
 # print(a)
+
+#pascals triange
+
+class Solution:
+    def pascals_triangle(self , numRows: int) -> list[list[int]]:
+        res = []
+        for i in range(numRows):
+            row = [1] * (i + 1)
+            for j in range(1, i):
+                row[j] = res[i - 1][j - 1] + res[i - 1][j]
+            res.append(row)
+        return res
+
+ans = Solution()
+print(ans.pascals_triangle(5))
+        
