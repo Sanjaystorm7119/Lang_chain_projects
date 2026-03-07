@@ -8,7 +8,7 @@ This notebook explores LangChain's core abstractions for data retrieval. It cove
 - **HuggingFace Embeddings**: Utilizing the `all-MiniLM-L6-v2` model for generating semantic vector representations.
 - **ChromaDB Integration**: Setting up and querying a local `Chroma` vector database.
 - **Retriever Interface**: Converting vector stores into `Retriever` objects that are compatible with LangChain Expression Language (LCEL).
-- **RAG Implementation**: Building a complete RAG chain using **Groq** (Llama3-8b-8192) to answer questions based on retrieved context.
+- **RAG Implementation**: Building a complete RAG chain using **Groq** (llama-3.3-70b-versatile) to answer questions based on retrieved context.
 
 ## 🛠️ Requirements
 
