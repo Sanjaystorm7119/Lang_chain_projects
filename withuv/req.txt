@@ -1,28 +1,39 @@
+# Core LangChain
 langchain
-ipykernel
-langsmith
-python-dotenv
-openai
-langchain-openai
-langchain-community
 langchain-core
-bs4
-pymupdf
-langgraph
+langchain-community
 langchain-text-splitters
-fastapi
+
+# LLM Providers
+langchain-openai
+langchain-groq
+langchain-ollama
+langchain-google-genai
+langchain-huggingface
+
+# Vector Stores
+faiss-cpu
 chromadb
 langchain-chroma
-sentence-transformers
-langchain_huggingface
-faiss-cpu
-beautifulsoup4
-streamlit
-langchain_ollama
-langchain_groq
-uv
-langserve
-uvicorn
+
+# Agents & Graphs
 langgraph
-langchain-google-genai
-langchain_community
+
+# Document Loaders
+pymupdf
+bs4
+beautifulsoup4
+
+# API & Serving
+fastapi
+uvicorn
+langserve
+
+# Dev & Utils
+openai
+langsmith
+python-dotenv
+sentence-transformers
+ipykernel
+streamlit
+uv
