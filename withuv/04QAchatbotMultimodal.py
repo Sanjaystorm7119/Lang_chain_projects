@@ -40,7 +40,6 @@ user_input = st.text_input("You:")
 
 
 def generate_response(user_input, api_key, model_name, max_token, temp):
-
     model = ChatOpenAI(
         model=model_name,
         temperature=temp,

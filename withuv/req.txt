@@ -25,3 +25,4 @@ langserve
 uvicorn
 langgraph
 langchain-google-genai
+langchain_community
