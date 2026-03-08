@@ -62,9 +62,8 @@ uv venv
 ### 3. Install Dependencies
 
 ```bash
+# All standard dependencies + tools (arxiv, wikipedia, ddgs) are in req.txt
 uv pip install -r req.txt
-# Plus the standalone tool libraries
-uv pip install duckduckgo-search arxiv wikipedia
 ```
 
 ### 4. Running the App

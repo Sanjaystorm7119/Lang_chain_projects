@@ -14,6 +14,7 @@ A comprehensive collection of projects exploring Generative AI, Document Process
 | **11. LangServe Deployment** | [11langserve.py](./11langserve.py)                   | -                                       | Deploying LangChain chains as REST APIs with LangServe.                       |
 | **12. Groq Chat App**        | [12App.py](./12App.py)                               | [README](./README_12App.md)             | Interactive Chat App with session history & message trimming using Groq.      |
 | **13. Vector Retrievers**    | [vectorretriever.ipynb](./pdf/vectorretriever.ipynb) | [README](./README_vectorretriever.md)   | Understanding Document abstractions, Vector Stores, and Retrievers with Groq. |
+| **05. Search Engine**        | [search_engine.py](./withuv/search_engine.py)        | [README](./withuv/README.md)            | Real-time Search Agent using modern @tool patterns (Arxiv, Wikipedia, DDGS).  |
 
 ## 🛠️ Global Setup
 
