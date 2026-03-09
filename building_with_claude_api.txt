@@ -1,0 +1,483 @@
+Building with the Claude API - Notes
+
+
+Overview of Claude Models
+Anthropic provides the Claude family of large language models with different variants optimized for different use cases:
+• Claude models vary in size, cost, and capabilities (Haiku, Sonnet, Opus)
+• General-purpose chat models suitable for most tasks
+• Smaller, faster, cheaper models for cost-sensitive applications
+• Models specialized for specific tasks like code generation
+• Longer context window variants for processing large amounts of text
+• Each model version offers different performance/cost tradeoffs
+
+
+Accessing the API
+You interact with Claude through HTTPS requests to Anthropic's API endpoints:
+• Requests come from backend services, scripts, or tools (not directly from frontend)
+• Each request includes your API key, model name, and configuration parameters
+• Typical parameters include temperature, max_tokens, system prompts, and message history
+• Responses return the model's output plus metadata (usage stats, response ID, timestamps)
+• Use response metadata for logging, cost tracking, and observability
+
+
+Getting an API Key
+• API keys are created and managed in the Anthropic Console
+• Each key is tied to your account and has specific usage limits
+• Keys must be kept SECRET - never hardcode in frontend code or share publicly
+• Always send keys in the Authorization header of HTTP requests
+• Rotate keys periodically for security
+• Revoke keys immediately if compromised
+
+
+Making a Request
+A typical Claude API request includes:
+• Model: The specific Claude model you want to use (e.g., claude-3-sonnet-20240229)
+• Messages: Array of message objects with roles (user, assistant, system)
+• System prompt: Optional instructions defining behavior and constraints
+• Temperature: Controls randomness (0 = deterministic, 1 = creative)
+• Max tokens: Limits the length of the response
+• Top_p: Controls diversity (nucleus sampling)
+• Stop sequences: Text that stops generation
+
+
+Response contains:
+• The assistant's content/reply
+• Stop reason (end_turn, max_tokens, etc.)
+• Usage: Input tokens, output tokens, cache metrics
+• ID and timestamp for tracking
+
+
+Multi-Turn Conversations
+Multi-turn chat is implemented by maintaining conversation history:
+• Include full or truncated prior conversation on each new request
+• Store conversation history server-side (database, cache, session storage)
+• Format history as array of messages with prior user/assistant turns
+• Model uses context to maintain coherence across multiple turns
+• Consider token limits and truncate old messages if conversation is very long
+• System prompt stays consistent across all turns
+
+
+System Prompts
+System prompts define the high-level behavior and constraints of Claude:
+• System prompt is sent as a special message at the start of conversation
+• Provides context like persona, tone, rules, and capabilities
+• Example: "You are a Python expert. Always provide secure, production-ready code."
+• Should be stable and explicit - not frequently changed
+• Can include safety guidelines, domain expertise, output format requirements
+• System prompts are the primary lever for controlling model behavior
+• Different system prompts can dramatically change the same input's output
+
+
+Temperature
+Temperature controls the randomness and creativity of the model's responses:
+• Low temperature (0.0-0.3): More deterministic, focused, reliable outputs
+• Medium temperature (0.5-0.7): Balanced between consistency and variety
+• High temperature (0.8-1.0): More diverse, creative, unpredictable outputs
+• Temperature = 0 is the most deterministic (always produces same output for same input)
+• For production systems, use low-to-moderate temperature for reliability
+• For creative tasks (brainstorming, writing), higher temperature works better
+• Default temperature is usually 1.0, but 0.7 is often a good starting point
+
+
+Response Streaming
+Streaming allows the client to receive tokens as they are generated:
+• Instead of waiting for complete response, stream tokens in real-time
+• Enables faster-feeling interfaces and better user experience
+• Open streaming HTTP connection to the API
+• Receive and render tokens/partial text as they arrive
+• Close stream at completion
+• Better for long responses where latency is noticeable
+• Most client libraries (Python, JavaScript, etc.) support streaming
+• Helps with perceived performance and responsiveness
+
+
+Controlling Model Output
+Various techniques to control the format and structure of Claude's responses:
+• Clear instructions in prompt: "Respond in JSON format"
+• Schema-based outputs: Define expected structure explicitly
+• Max_tokens constraint: Limit response length
+• Stop sequences: Tell model when to stop generating
+• Role separation: Use system prompt, user input, assistant response clearly
+• Combining multiple techniques is most reliable
+• Always validate output matches expected format before using
+• Combine system prompts with explicit formatting instructions for best results
+
+
+Structured Data
+Structured data features allow Claude to produce machine-readable outputs:
+• Ask model to return JSON conforming to a specific schema
+• Specify required fields, data types, and validation rules
+• Useful for downstream automation and processing
+• Example: Extract product title, price, and rating from text
+• Example: Generate SQL query from natural language
+• More reliable than parsing free-form text
+• Can combine with JSON schema validation
+• Saves engineering effort on parsing and error handling
+
+
+Prompt Evaluation
+• Assessing quality and effectiveness of prompts
+• Methods for comparing different prompt versions
+• Metrics for success (accuracy, consistency, relevance)
+• A/B testing prompts to find the best approach
+• Iterative refinement based on results
+
+
+A Typical Eval Workflow
+• Define clear success criteria and evaluation metrics
+• Create a test dataset of representative examples
+• Run Claude on each example with different prompts
+• Compare outputs against ground truth or rubric
+• Calculate success rate and other metrics
+• Identify which prompts work best for different scenarios
+• Document lessons learned
+
+
+Generating Test Datasets
+• Create diverse, representative test cases
+• Cover normal cases, edge cases, and failure modes
+• Label with expected correct outputs (ground truth)
+• Ensure dataset quality and accuracy
+• Test both common scenarios and unusual inputs
+• Use real data when possible
+• Build gradually as you encounter new cases
+
+
+Running the Eval
+• Execute all test cases with each prompt version
+• Log inputs, outputs, and metadata for analysis
+• Compare outputs to expected results
+• Calculate success metrics (accuracy, F1 score, etc.)
+• Handle errors and edge cases appropriately
+• Track performance differences between versions
+
+
+Model Based Grading
+• Use Claude itself to grade responses (meta-evaluation)
+• Create a grading rubric for Claude to follow
+• Claude evaluates other Claude outputs
+• Can scale evaluation to large datasets
+• Still requires human review for validation
+• Effective for nuanced quality assessment
+
+
+
+Code Based Grading
+• Validates AI-generated code responses for format, syntax, and task accuracy
+• Format validation: Response should return only requested code type (Python, JSON, or Regex) without explanations
+• Valid Syntax: Generated code should parse correctly as the intended language
+• Task Following: Response should directly address what was asked and be accurate
+• First two criteria handled by code grader, task following evaluated by model grader
+• Syntax validation using try-except blocks:
+ 		 - validate_json(): Uses json.loads() to parse JSON, returns 10 if valid, 0 if JSONDecodeError
+  	- validate_python(): Uses ast.parse() to check Python syntax, returns 10 if valid, 0 if SyntaxError
+  	- validate_regex(): Uses re.compile() to validate regex, returns 10 if valid, 0 if re.error
+• Dataset format requirements: Include "format" field to specify expected output type (python, json, or regex)
+• Example dataset entry: {"task": "...", "format": "python"}
+
+• Improving prompt clarity: Specify "Respond only with Python, JSON, or a plain Regex" and "Do not add any comments or commentary or explanation"
+• Use pre-filled assistant message: add_assistant_message(messages, "```code") to encourage raw code output
+• Combining scores: Average model grader score with syntax score: (model_score + syntax_score) / 2
+• Equal weighting can be adjusted based on use case priorities
+• Implementation: Run evaluation to get baseline score, which provides quantitative metrics for measuring prompt engineering progress
+
+
+Prompt Engineering
+• Process of improving prompts to get more reliable, higher-quality outputs
+• Iterative improvement cycle: Set goal -> Write initial prompt -> Evaluate -> Apply techniques -> Re-evaluate
+• PromptEvaluator class handles dataset generation and model grading
+• Control concurrency with max_concurrent_tasks parameter (start with 3-5 to avoid rate limits)
+• Keep number of test cases low (2-3) during development to speed up iteration
+• Basic prompt establishes baseline, but likely produces poor results
+• Evaluation provides numerical score and detailed HTML report
+• Low initial scores typical (e.g., 2.3 out of 10) - goal is consistent improvement
+• Detailed report shows exactly how each test case performed and model's reasoning
+• Each iteration should show measurable improvement in evaluation scores
+• Systematic approach: make one change at a time, evaluate impact, build on what works
+• Final validation can use higher number of test cases after proven approach
+
+Being Clear and Direct
+• First line of prompt is the most important part of the entire request
+• Clarity: Use simple language that anyone can understand
+• Clarity: State exactly what you want without beating around the bush
+• Clarity: Lead with straightforward statement of Claude's task
+• Directness: Use instructions, not questions
+• Directness: Start with direct action verbs like "Write," "Create," or "Generate"
+• Bad example: "I need to know about those things people put on their roofs that use sun"
+• Good example: "Write three paragraphs about how solar panels work"
+• Bad example: "I was reading about renewable energy. What countries use geothermal?"
+• Good example: "Identify three countries that use geothermal energy. Include generation stats for each."
+• Application: Instead of "What should this person eat?" use "Generate a one-day meal plan for an athlete that meets their dietary restrictions"
+• Immediate improvement possible: Clear opening line can significantly jump evaluation scores (e.g., 2.32 to 3.92)
+• Key: Treat Claude like a capable assistant who needs clear direction, not someone who has to guess
+
+Being Specific
+• One of most effective ways to improve results is to be specific about what you want
+• Provide clear guidelines or steps that direct Claude toward desired output
+• Example: "Write a short story about a character who discovers a hidden talent" is too vague
+• Vague prompts lead to countless possible directions and inconsistent results
+• Adding specific guidelines gives Claude a clearer target and improves consistency and quality
+• Output Quality Guidelines: Focus on qualities the output should have
+• Quality guidelines control: Length, structure, format, specific attributes/elements, tone/style
+• Quality guidelines example: Under 1,000 words, clear action revealing talent, supporting character
+• Process Steps: Provide specific steps for Claude to follow systematically
+• Process steps useful for: Complex problems, troubleshooting, decision-making, critical thinking
+• Process steps example: 
+1) Brainstorm talents, 
+2) Pick most interesting, 
+3) Outline pivotal scene, 
+4) Brainstorm supporting characters
+• Real-world impact: Specificity more than doubled scoresmore or less  (3.92 to 7.86)
+• Always use output guidelines in almost every prompt as safety net for consistent results
+• Add process steps for complex/ambiguous scenarios to ensure comprehensive consideration
+• Professional prompts often combine both quality guidelines and process steps for best results
+
+Structure with XML Tags
+• When including large amounts of content, Claude can struggle to understand which pieces belong together
+• XML tags provide simple way to add structure and clarity, especially with large amounts of interpolated data
+• Create clear boundaries and delimiters to help Claude understand prompt structure
+• Makes it possible to tell what's code versus documentation when mixing content types
+• Custom tag names are more effective than official XML tags
+• Descriptive tag examples: , , , (better than generic tags)
+• Specific and descriptive tag names help Claude understand purpose of each section
+• Most useful when: Including large amounts of context/data, mixing different content types, creating complex prompts
+• Useful even for shorter content as delimiters that make prompt structure obvious
+• Example structure: Wrap athlete data in tags, then use that data for meal plan generation
+• Provides crystal clear understanding that height, weight, goal, and restrictions are related athlete data
+• While simple prompts may not show dramatic improvements, XML tags become increasingly valuable as prompts grow more complex
+• Best practice: Use clear tags to separate prompt instructions, code samples, documentation, and data sections
+
+Providing Examples
+• One of the most effective prompt engineering techniques
+• Known as "one-shot" (single example) or "multi-shot" (multiple examples) prompting
+• Give Claude sample input/output pairs to guide responses
+• Particularly useful for capturing corner cases or edge scenarios
+• Useful for: Defining complex output formats, showing desired style/tone, handling ambiguous inputs
+• One-Shot: Provide single example to establish pattern
+• Multi-Shot: Provide multiple examples for different scenarios and edge cases
+• Sarcasm example: A sarcastic tweet may appear positive but is actually negative
+• Example with sarcasm handling: Include positive example, sarcastic example with explanation
+• Always use XML tags to structure examples clearly (e.g., , )
+• Finding good examples from evaluations: Use outputs that scored 10 (or highest available)
+• Use highest-scoring input/output pairs as examples from your evaluations
+• Helps Claude understand what "perfect" output looks like for specific use case
+• Add context to examples: Explain why output is good, not just format
+• Example context: "This example is well-structured, provides detailed info, aligns with goals/restrictions"
+• Best practices: Use XML tags, be explicit about what you're showing, address failure cases, explain ideal outputs
+• Examples are powerful because they show rather than tell, making prompts more reliable
+Tool use with Claude
+
+ 
+1. Introducing tool use
+
+Tools allow Claude to access information from the outside world, extending its capabilities beyond training data. Tool use follows a specific back-and-forth pattern:
+
+- Initial Request: You send Claude a question with instructions on how to get extra data from external sources
+- Tool Request: Claude analyzes the question and decides it needs additional information
+- Data Retrieval: Your server runs code to fetch the requested information from external APIs or databases
+- Final Response: You send the retrieved data back to Claude, which then generates a complete response
+
+Key Benefits:
+- Real-time Information: Access current data not available during training
+- External System Integration: Connect Claude to databases, APIs, and other services
+- Dynamic Responses: Provide answers based on latest available information
+- Structured Interaction: Claude knows exactly what information it needs
+
+ 
+ 2. Tool Functions
+
+A tool function is a plain Python function that gets executed automatically when Claude decides it needs extra information.
+
+Best Practices:
+- Use descriptive names: Both function and parameter names should clearly indicate purpose
+- Validate inputs: Check that required parameters aren't empty or invalid
+- Provide meaningful error messages: Claude learns from errors and might retry with corrected parameters
+
+Example: get_current_datetime function accepts a date format parameter so Claude can request time in different formats.
+
+ 3. Tool Schemas
+
+After writing a tool function, create a JSON schema that tells Claude what arguments your function expects. JSON Schema acts as documentation that Claude reads to understand when and how to call your tools.
+
+Complete tool specification has three main parts:
+- name: Clear, descriptive name for your tool (e.g., "get_weather")
+- description: What the tool does, when to use it, and what it returns
+- input_schema: Actual JSON schema describing function arguments
+
+Writing Effective Descriptions:
+- Aim for 3-4 sentences explaining what the tool does
+- Describe when Claude should use it
+- Explain what kind of data it returns
+- Provide detailed descriptions for each argument
+
+Easy Way to Generate Schemas: Use Claude itself to generate them by providing your tool function code and Anthropic documentation on tool use.
+
+ 4. Handling Message Blocks
+
+When working with Claude's tool functionality, you encounter a new type of response structure - multi-block messages that contain both text and tool usage information instead of simple text responses.
+
+Making Tool-Enabled API Calls:
+Include a "tools" parameter in your API call with a list of JSON schemas describing available functions Claude can call.
+
+Understanding Multi-Block Messages:
+When Claude decides to use a tool, it returns an assistant message with multiple blocks:
+- Text Block: Human-readable text explaining what Claude is doing
+- ToolUse Block: Instructions for your code about which tool to call and what parameters to use
+  	- An ID for tracking the tool call
+  	- The name of the function to call
+  	- Input parameters formatted as a dictionary
+  	- The type designation "tool_use"
+
+Managing Conversation History:
+Claude doesn't store conversation history - you manage it manually. When working with tool responses, preserve the entire content structure including all blocks.
+
+The Complete Tool Usage Flow:
+1. Send user message with tool schema to Claude
+2. Receive assistant message with text block and tool use block
+3. Extract tool information and execute the actual function
+4. Send tool result back to Claude along with complete conversation history
+5. Receive final response from Claude
+
+Updating Helper Functions:
+If using helper functions like add_user_message() and add_assistant_message(), update them to handle multi-block content structures including tool use blocks.
+
+
+ 5. Sending Tool Results
+
+After Claude requests a tool call, you need to execute the function and send the results back. This completes the tool use workflow.
+
+Running the Tool Function:
+When Claude responds with a tool use block, extract input parameters using response.content[1].input. This gives a dictionary of arguments. Use Python's unpacking syntax to call the function: get_current_datetime(**response.content[1].input)
+
+Tool Result Block:
+After running the tool, send results back using a tool result block inside a user message:
+- tool_use_id: Must match the ID of the ToolUse block
+- content: Output from running your tool (as string)
+- is_error: True if an error occurred
+
+Handling Multiple Tool Calls:
+Claude can request multiple tool calls in a single response. Each tool call gets a unique ID, and you must match these IDs when sending results back.
+
+Building the Follow-up Request:
+Your follow-up request must include:
+- Original user message
+- Assistant message with tool use block
+- User message with tool result block
+
+Making the Final Request:
+When sending the follow-up, still include the tool schema even though Claude won't make another tool call. Claude needs it to understand tool references in conversation history. Claude then responds with a final message incorporating tool results into a natural response.
+
+
+ 6. Multi-turn Conversations with Tools
+
+Multi-turn conversations with tools extend Claude's capabilities across multiple exchanges. Claude can make tool calls in one turn, receive results, and use that information in subsequent responses. This enables complex workflows where tool results inform further analysis and decision-making. Key aspects include managing conversation state, tracking which tools have been called, and providing updated context for Claude to make informed decisions.
+
+ 7. Implementing Multiple Turns
+
+Implementing multiple turns requires building a loop that continues until the task is complete. The pattern involves: send messages to Claude, check if tool calls are requested, execute tools if needed, send results back, and repeat until Claude provides a final response without tool requests. This creates an agentic loop where Claude can repeatedly request information and refine its responses based on results.
+
+ 8. Using Multiple Tools
+
+Using multiple tools allows Claude to choose from several available tools and compose them effectively. Claude can call different tools based on the user request, sequence tool calls logically, and even parallelize calls when appropriate. Provide multiple tool schemas in the tools parameter, each describing a different function. Claude learns when to use each tool based on descriptions and context.
+
+ 9. The Batch Tool
+
+The batch tool enables running many tool invocations in bulk to improve throughput for high-volume tasks. Instead of making individual API calls for each tool invocation, batch operations allow you to group multiple tool calls together, reducing latency and improving efficiency. This is particularly useful when you have many independent tool calls that can be processed in parallel.
+
+ 10. Tools for Structured Data
+
+Tools for structured data integrate tools that read, transform, or generate structured data like JSON. This ensures more reliable downstream processing by working with well-defined data structures. Tools can validate input, transform between formats, and ensure data consistency throughout the tool use workflow.
+
+ 11. Fine Grained Tool Calling
+
+Fine grained tool calling enables controlling which tools are available when, constraining arguments, and tightening safety and guardrails for sensitive operations. You can dynamically enable or disable specific tools based on context, restrict argument values, and add validation to ensure proper tool usage. This provides granular control over Claude's tool interactions.
+
+ 12. The Text Edit Tool
+
+The text edit tool is specialized for applying precise edits to text, such as code refactors or document revisions. Claude can provide specific edit instructions that the tool applies, enabling careful modifications to existing text without rewriting entire documents. This is useful for collaborative editing, code refactoring, and targeted content updates.
+
+ 13. The Web Search Tool
+
+The web search tool allows Claude to query the web, retrieve external information, and ground answers in up-to-date search results. Claude can formulate search queries, analyze results, and integrate current information into responses. This is essential for handling questions about recent events, current information, and topics that change frequently.
+
+
+Retrieval Augmented  
+1. Introducing Retrieval Augmented Generation
+
+RAG is a technique for working with large documents that are too big to fit into a single prompt. It breaks documents into chunks and only includes the most relevant pieces when answering questions.
+
+Problems with Large Documents:
+- Hard limit on prompt length
+- Claude becomes less effective with very long prompts
+- Larger prompts cost more to process
+- Larger prompts take longer to process
+
+RAG Solution:
+- Break documents into smaller chunks during preprocessing
+- When a user asks a question, find and include only the most relevant chunks
+- Claude can focus on relevant content
+- Scales to very large documents and multiple documents
+- Smaller prompts cost less and run faster
+
+Challenges:
+- Requires preprocessing to chunk documents
+- Need a search mechanism to find relevant chunks
+- Included chunks might not contain all context Claude needs
+- Many ways to chunk text with different trade-offs
+
+ 2. Text Chunking Strategies
+
+Text chunking strategies determine how to break large documents into manageable pieces. Different approaches include:
+
+- Fixed-size chunks: Split documents into equal-sized pieces (e.g., 512 tokens)
+- Structural chunking: Break at document boundaries (headers, paragraphs, sections)
+- Semantic chunking: Split based on meaning and context
+- Overlapping chunks: Include overlap between chunks to maintain context
+
+Each strategy has trade-offs between context preservation, chunk size, and retrieval efficiency. The best approach depends on document structure and query patterns.
+
+
+ 3. Text Embeddings
+
+Text embeddings convert chunks into numerical representations (vectors) that capture semantic meaning. Embeddings allow finding similar chunks through vector similarity rather than keyword matching. You can use pre-trained embeddings from APIs or libraries, store them in a vector database, and compare new queries to chunk embeddings to find the most relevant matches.
+
+ 4. The Full RAG Flow
+
+The full RAG flow consists of: 
+1) Preprocess documents into chunks, 
+2) Generate embeddings for each chunk, 
+3) Store chunks and embeddings in a database, 
+4) When a query arrives, generate query embedding, 
+5) Find most similar chunks using vector similarity, 
+6) Include retrieved chunks in prompt to Claude, 
+7) Claude uses the chunks to answer the question. This end-to-end process enables efficient retrieval of relevant information at scale.
+
+ 5. Implementing the RAG Flow
+
+Implementing RAG involves writing code to: 
+1) Load and parse documents, 
+2) Split into chunks, 
+3) Generate embeddings for chunks, 
+4) Store in vector database (e.g., Pinecone, Weaviate), 
+5) Create a search function that finds relevant chunks, 
+6) Construct prompts with retrieved chunks, 
+7) Pass to Claude for answer generation. Libraries like LangChain simplify this workflow.
+
+ 6. BM25 Lexical Search
+
+BM25 is a lexical (keyword-based) search algorithm that ranks documents based on keyword matching. Unlike embeddings which use semantic meaning, BM25 matches exact keywords weighted by term frequency and document frequency. It's fast, interpretable, and works well for specific keyword queries. Can be used alongside semantic search for hybrid retrieval approaches. Basically it is an improved version of TF-IDF and has 2 extra params K,b
+
+ 7. A Multi-Index RAG Pipeline
+
+A multi-index RAG pipeline combines multiple retrieval methods (semantic search, BM25 lexical search, metadata filtering) to find the most relevant chunks. Uses different indexes optimized for different query types. Combines results from multiple methods to get better coverage. Useful for complex queries requiring both keyword and semantic matching.
+
+ 8. Reranking Results
+
+Reranking results applies a more sophisticated model to reorder retrieval results after initial retrieval. An initial retriever finds many candidates, then a reranker scores them more accurately using cross-encoder models or LLMs. Improves quality of final retrieved chunks by filtering out less relevant ones while keeping the most important context.
+
+ 9. Contextual Retrieval
+
+Contextual retrieval adds surrounding context to chunks for better understanding. Instead of retrieving just a small chunk, also include context from before and after to help Claude understand the full picture. Addresses the issue where isolated chunks might lack necessary context for Claude to answer questions accurately
+
+
+
