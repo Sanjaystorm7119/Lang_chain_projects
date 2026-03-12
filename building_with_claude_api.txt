@@ -347,7 +347,7 @@ If using helper functions like add_user_message() and add_assistant_message(), u
 After Claude requests a tool call, you need to execute the function and send the results back. This completes the tool use workflow.
 
 Running the Tool Function:
-When Claude responds with a tool use block, extract input parameters using response.content[1].input. This gives a dictionary of arguments. Use Python's unpacking syntax to call the function: get_current_datetime(**response.content[1].input)
+When Claude responds with a tool use block, extract input parameters using response.content[1].input. This gives a dictionary of arguments. Use Python's unpacking syntax to call the function: get_current_datetime(response.content[1].input)
 
 Tool Result Block:
 After running the tool, send results back using a tool result block inside a user message:
@@ -813,4 +813,487 @@ Common Patterns:
 - GitHub/GitLab server: tools for repo operations, resources for code browsing
 - Document manager: tools for CRUD, resources for search/listing, prompts for reformatting
 - Data analyst: tools for query execution, resources for schema/metadata, prompts for analysis workflows
+
+
+=== ANTHROPIC APPS - CLAUDE CODE AND COMPUTER USE ===
+
+AUTOMATED DEBUGGING
+
+Overview:
+Claude Code extends beyond writing code - it can monitor deployed applications, detect production errors, and automatically fix them. This creates an automated debugging assistant that catches issues in production environments.
+
+The Production Problem:
+- Common scenario: applications work perfectly in development but break in production
+- Example: chatbot responds correctly locally but fails to generate artifacts when deployed to AWS Amplify
+- Traditional approach: dig through CloudWatch logs, hunt error messages, manually debug    environment differences
+- Time-consuming and requires context-switching from development to operations
+
+Automated Error Detection and Fixing:
+Claude handles the entire workflow automatically:
+
+Workflow Steps:
+1. GitHub Action runs daily (typically early morning)
+2. Claude queries CloudWatch for errors from last 24 hours
+3. Filters and deduplicates errors to fit context limits
+4. Claude analyzes each error and attempts to fix it
+5. Fixed code gets committed and pull request automatically opened
+
+Setting Up the Workflow:
+Required Components:
+- Repository checkout and dependency installation
+- Claude Code setup and configuration
+- AWS CLI installation for CloudWatch access
+- Error filtering logic to manage context window limits
+- Automated commit and pull request creation
+
+Error Understanding:
+- Claude doesn't just identify errors - it understands context
+- Example: Invalid model identifier in production (us.anthropic.claude-3-5-sonnet-....)
+- Claude recognizes patterns and applies appropriate fixes
+
+Real-World Results:
+Automated pull requests include:
+- Clear error descriptions in plain language
+- Root cause analysis
+- Specific fixes implemented
+- Updated code with proper model identifiers or configuration
+- Reviewable artifact maintaining code review practices
+
+Customization Options:
+- Adjust error detection frequency
+- Customize which error types to prioritize
+- Add specific debugging instructions for your application
+- Integrate with different logging systems beyond CloudWatch
+- Set up notifications for critical issues
+
+Key Benefits:
+- Claude understands application context
+- Analyzes production errors intelligently
+- Proposes fixes accounting for environment-specific differences
+- Transforms debugging from reactive/manual to proactive/automated
+- Keeps applications running smoothly
+
+
+
+COMPUTER USE
+
+Overview:
+Computer Use is a powerful feature that lets Claude interact directly with desktop environments, giving the AI the ability to control a computer like a human would. Opens up new possibilities for automation, testing, and workflow assistance.
+
+Capabilities:
+What Computer Use Can Do:
+- Navigate websites
+- Click buttons
+- Fill out forms
+- Interact with applications in real-time
+
+Use Cases:
+- Automated QA testing of web applications
+- Data entry and form filling
+- Website navigation and information gathering
+- UI testing and validation
+- Repetitive desktop tasks
+
+Real-World Example: Automated QA Testing
+Scenario: Testing a React component with autocomplete feature (users type @ to mention files/resources)
+
+Test Instructions Example:
+Goal: Conduct QA testing on React component at https://test-mentioner.vercel.app/
+
+Testing Process:
+1. Open new browser tab
+2. Navigate to test URL
+3. Execute test cases one by one
+4. Write concise report after completing all tests
+
+Test Cases:
+1. Typing 'Did you read @' should display autocomplete options
+2. Typing 'Did you read @' then pressing enter should add '@document.pdf'
+3. After adding '@document.pdf', pressing backspace should show autocomplete options directly below text, not elsewhere on page
+
+How It Works in Practice:
+Execution Environment:
+- Runs in controlled environment (typically Docker container)
+- Browser completely isolated from main system
+- Interact through chat interface
+- Watch as Claude navigates and interacts with application
+
+Claude's Testing Process:
+1. Navigate to specified URL
+2. Type test input and observe autocomplete behavior
+3. Test enter key functionality
+4. Check backspace behavior for proper positioning
+5. Generate detailed report of what passed/failed
+
+Results:
+Comprehensive Report:
+- In example: First two tests pass (autocomplete appears correctly, enter key works)
+- Third test might fail (autocomplete dropdown appears in wrong location when backspace pressed)
+- Saves significant time for developers
+- Especially useful for repetitive QA tasks or testing multiple scenarios quickly
+- Describe what you want tested, let Claude handle execution
+
+Security and Isolation:
+Sandboxed Environment:
+- Browser and desktop run inside Docker containers
+- Completely isolated from main system
+- No risk to personal files or system security
+- Can give Claude broad permissions while maintaining complete control
+- Controls what it can/cannot access
+
+
+
+HOW COMPUTER USE WORKS
+
+Overview:
+Computer use in Claude works exactly like regular tool use - it's a special implementation of the same underlying tool system. Understanding this connection makes computer use easier to grasp and implement.
+
+Tool Use Refresher:
+How Regular Tool Use Works:
+1. Send Claude user message along with tool schema
+2. Claude decides it needs to use tool to answer question
+3. Claude responds with tool use request containing tool name and input parameters
+4. Your server runs actual function and returns result
+5. Send result back to Claude in tool result message
+
+Example: Weather Query
+- Question: "What's the weather in San Francisco?"
+- Provide get_weather tool schema
+- Claude calls tool with location parameter
+- Your code fetches weather data
+- Return "Sunny" back to Claude
+
+Computer Use: Same Flow, Different Tool
+Key Insight:
+- Computer use follows exact same pattern as regular tool use
+- Implemented as a tool - very special one that can interact with desktop environment
+
+Process:
+1. Include tool schema providing computer interaction capabilities
+2. Claude decides to use computer tool
+3. Instead of running simple function, execute requested action in computing environment
+4. Send result (like screenshot) back to Claude
+
+The Computer Tool Schema:
+Basic Schema:
+{
+  "type": "computer_20250124",
+  "name": "computer",
+  "display_width_px": 1024,
+  "display_height_px": 768,
+  "display_number": 1
+}
+
+Expanded Schema:
+Behind the scenes, basic schema gets expanded into detailed schema telling Claude it can perform:
+- key: Press keyboard keys
+- mouse_move: Move the cursor
+- left_click: Click at specific coordinates
+- screenshot: Take a screenshot
+- scroll: Scroll the screen
+
+The Computing Environment:
+Implementation:
+- Need actual computing environment that can execute actions programmatically
+- Most common approach: Docker container with desktop environment like Firefox
+
+Execution Flow:
+When Claude requests action like "click at coordinates (500, 300)":
+1. System receives tool use request
+2. Executes mouse click in Docker container
+3. Takes screenshot of result
+4. Sends screenshot back to Claude
+
+Note: Docker container doesn't have to be complex - just needs to support programmatic keyboard and mouse interactions
+
+Getting Started:
+Setup Process:
+- Don't need to build computing environment from scratch
+- Anthropic provides reference implementation handling all technical details
+
+Installation Steps:
+1. Install Docker 
+2. Run provided Docker command with API key
+3. Access web interface to chat with Claude
+
+Setup Command:
+export ANTHROPIC_API_KEY="your_api_key"
+docker run \
+  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+  -v $HOME/.anthropic:/home/computeruse/.anthropic \
+  -p 5900:5900 \
+  -p 8501:8501 \
+  -p 6080:6080 \
+  -p 8080:8080 \
+  -it ghcr.io/anthropics/anthropic-quickstarts:computer-use-demo-latest
+
+Access:
+- Once running, access chat interface to test Claude's computer use capabilities directly
+- Full setup guide available at: github.com/anthropics/anthropic-quickstarts
+
+Key Takeaway:
+- Computer use isn't magic - it's regular tool use system applied to desktop automation
+- Claude doesn't directly control computers
+- Claude makes tool requests that your code fulfills by executing actions in controlled environment
+- Makes computer use both powerful and safe
+- Maintain full control over what actions actually get executed
+
+
+
+AGENTS AND WORKFLOWS
+
+ 1. Agents and Workflows Overview
+
+Workflows and agents are strategies for handling user tasks that can't be completed by Claude in a single request.
+
+When to Use Workflows vs Agents:
+- Use workflows when you can picture the exact flow or steps that Claude should go through to solve a problem, or when your app's UX constrains users to a set of tasks
+- Use agents when you're not sure exactly what task or task parameters you'll give to Claude
+
+Key Definitions:
+- Workflows: A series of calls to Claude meant to solve a specific problem through a predetermined series of steps
+- Agents: Give Claude a goal and a set of tools, expecting Claude to figure out how to complete the goal through the provided tools
+
+Example: Image to CAD Workflow
+Building a web app where users drag and drop an image of a metal part to create a STEP file:
+1. Feed an image into Claude, asking it to describe the object
+2. Based on the description, ask Claude to use the CadQuery library to model the object
+3. Create a rendering
+4. Ask Claude to grade the rendering against the original image. If there are issues, fix them
+
+The Evaluator-Optimizer Pattern:
+- Producer: Takes input and creates output (Claude using CadQuery to model the part)
+- Grader: Evaluates the output against some criteria
+- Feedback loop: If the grader doesn't accept the output, feedback goes back to the producer
+- Iteration: The cycle repeats until the grader accepts the output
+
+
+ 2. Parallelization Workflows
+
+The Problem with Complex Single Prompts:
+Asking Claude to do too much in a single request without specific criteria leads to unreliable results.
+
+A Better Approach: Parallelization
+Split the task into multiple parallel requests, each focusing on one aspect:
+- Send the same image to Claude multiple times simultaneously
+- Each request includes specialized criteria for one material (metal, polymer, ceramic, etc.)
+- Claude evaluates the part's suitability for each material independently
+- Collect all analysis results and feed them into a final aggregation step
+
+How Parallelization Workflows Work:
+- Split a single task into multiple sub-tasks
+- Run the sub-tasks in parallel
+- Aggregate the results together
+- The parallelized sub-tasks don't need to be identical - each can have specialized prompts, tools, or criteria
+
+Benefits:
+- Focused attention: Claude concentrates on one specific aspect at a time
+- Easier optimization: You can improve and test prompts independently
+- Better scalability: Adding new evaluations is straightforward
+- Improved reliability: Reduces cognitive load on the AI model
+
+When to Use Parallelization:
+When you have a complex decision that can be broken down into independent evaluations.
+
+
+ 3. Chaining Workflows
+
+What is Workflow Chaining?
+Breaking down a large, complex task into smaller, sequential subtasks instead of asking Claude to do everything at once.
+
+Example: Social Media Marketing Tool
+Instead of one massive prompt, break it down into steps:
+1. Find related trending topics on Twitter
+2. Select the most interesting topic (using Claude)
+3. Research the topic (using Claude)
+4. Write a script for a short format video (using Claude)
+5. Use an AI avatar and text-to-speech to create a video
+6. Post the video to social media
+
+Why Chain Instead of One Big Prompt?
+- Focus: Claude can concentrate on doing one task well rather than juggling multiple requirements
+- Split large tasks into smaller, non-parallelizable subtasks
+- Optionally do non-LLM processing between each task
+- Keep Claude focused on one aspect of the overall task
+
+The Long Prompt Problem:
+Even with detailed constraints in one massive prompt, Claude might still violate some rules (use emojis, mention AI authorship, sound unprofessional).
+
+The Chaining Solution:
+Step 1: Send initial prompt and accept that first result might not be perfect
+Step 2: Make a follow-up request focusing specifically on fixing issues:
+- Identify and remove locations where text identifies author as AI
+- Find and remove all emojis
+- Locate any cringey writing and replace with professional text
+
+When to Use Chaining:
+- Complex tasks with multiple requirements
+- Claude consistently ignores some constraints in long prompts
+- Need to process or validate outputs between steps
+- Want to keep each interaction focused and manageable
+
+
+ 4. Routing Workflows
+
+Purpose:
+Solve the problem where different types of user requests need different handling approaches. Route incoming requests to specialized processing pipelines instead of using a one-size-fits-all prompt.
+
+The Problem with Generic Prompts:
+A single generic prompt can't handle both educational content ("programming") and entertainment content ("surfing") effectively.
+
+Setting Up Content Categories:
+Define different types of content your application might need to generate:
+- Entertainment: High-energy, culturally relevant content with trendy language
+- Educational: Clear, engaging explanations with relatable examples
+- Comedy: Sharp, unexpected content with clever observations
+- Personal vlog: Authentic, intimate content with conversational storytelling
+- Reviews: Decisive, experience-based content highlighting strengths and weaknesses
+- Storytelling: Immersive content using vivid details and emotional connection
+
+How Routing Works in Practice:
+Two-step process:
+1. Categorization: Send the user's topic to Claude to categorize it into one of predefined genres
+2. Specialized Processing: Use the category result to select appropriate prompt template and generate content
+
+Routing Workflow Architecture:
+- User input goes to a router component first
+- The router categorizes the request using an initial Claude call
+- Based on the category, input gets forwarded to one specific processing pipeline
+- Each pipeline can have its own workflow, prompts, or tools optimized for that category
+- User input only goes to one specialized pipeline, not all of them
+
+When to Use Routing:
+- Application handles diverse types of requests needing different approaches
+- Can clearly define categories that cover your use cases
+- Categorization step can be handled reliably by Claude
+- Performance benefit of specialized processing outweighs routing overhead
+
+
+ 5. Agents and Tools
+
+Key Concept:
+Agents represent a shift from structured workflows. While workflows are perfect when you know exact steps, agents shine when you're not sure what those steps should be.
+
+How Tools Make the Agent:
+The real power of agents lies in their ability to combine simple tools in unexpected ways.
+
+Example: Basic Datetime Tools
+- get_current_datetime: Gets the current date and time
+- add_duration_to_datetime: Adds time to a given date
+- set_reminder: Creates a reminder for a specific time
+
+Claude can chain these together for complex requests:
+- "What's the time?" → calls get_current_datetime
+- "What day of the week is it in 11 days?" → chains get_current_datetime + add_duration_to_datetime
+- Setting a gym reminder next Wednesday → uses all three tools in sequence
+- "When does my 90-day warranty expire?" → Claude asks when you purchased before calculating
+
+Tools Should Be Abstract:
+Provide reasonably abstract tools rather than hyper-specialized ones.
+
+Claude Code Example - Generic Tools:
+- bash: Run any command
+- read: Read any file
+- write: Create any file
+- edit: Modify files
+- glob: Find files
+- grep: Search file contents
+
+No specialized tools like "refactor code" or "install dependencies" - Claude figures out how to use basic tools to accomplish complex tasks.
+
+Best Practice: Combinable Tools
+Provide tools that Claude can combine in creative ways.
+
+Social Media Video Agent Example:
+- bash: Access to FFMPEG for video processing
+- generate_image: Create images from prompts
+- text_to_speech: Convert text to audio
+- post_media: Upload content to social platforms
+
+This enables both simple workflows and interactive experiences where the agent adapts based on user feedback.
+
+
+ 6. Environment Inspection
+
+Core Principle:
+Claude operates blindly - it needs to be able to observe and understand the results of its actions to work effectively.
+
+Why Environment Inspection Matters:
+Every time Claude performs an action (like clicking a button), it needs to receive feedback (like a screenshot) to understand what happened. From Claude's perspective, clicking could:
+- Navigate to a new page
+- Open a menu
+- Trigger any number of changes
+
+Without seeing the results, Claude has no way to understand success or the new state of the environment.
+
+Reading Before Writing:
+Before Claude can modify any file, it needs to understand the current contents. Always follow this pattern when building agents.
+
+Example: When asked to add a new route to a Python file, Claude first reads the existing code to understand the current structure before making changes.
+
+System Prompts for Environment Inspection:
+For complex tasks like video generation, include instructions like:
+- Use bash tool to run whisper.cpp and generate caption files with timestamps to verify dialogue placement
+- Use FFmpeg to extract screenshots from the video at regular intervals to visually inspect output
+- Compare generated content against original requirements
+
+Benefits of Environment Inspection:
+- Better progress tracking: Claude can gauge how close it is to completing a task
+- Error handling: Unexpected results can be detected and corrected
+- Quality assurance: Output can be verified before considering task complete
+- Adaptive behavior: Claude can adjust its approach based on what it observes
+
+Practical Implementation:
+Always ask: "How will Claude know if this action worked?"
+- Reading file contents before modifications
+- Taking screenshots after UI interactions
+- Checking API responses for expected data
+- Validating generated content against requirements
+
+
+ 7. Workflows vs Agents - Comparison
+
+What Are Workflows?
+A predefined series of calls to Claude designed to solve a known problem or set of problems. Use workflows when you can picture the flow of steps ahead of time.
+- Break down big tasks into smaller, more specific subtasks
+- Each step focuses on a single area for more precise work
+
+What Are Agents?
+Claude gets a set of basic tools and is expected to formulate a plan to use these tools to complete a task.
+- Don't know exactly what tasks will be provided
+- System needs to be more adaptive
+- Can creatively figure out how to handle challenges by combining tools in unexpected ways
+
+BENEFITS OF WORKFLOWS:
+- Claude can focus on one subtask at a time, leading to higher accuracy
+- Far easier to evaluate and test (know each exact step)
+- More predictable and reliable execution
+- Better suited for solving specific, well-defined problems
+
+BENEFITS OF AGENTS:
+- Allow for more flexible user experience
+- Far more flexible task completion - Claude can combine tools in unexpected ways
+- Can handle novel situations not anticipated during development
+- Can ask users for additional input when needed
+
+DOWNSIDES OF WORKFLOWS:
+- Far less flexible - dedicated to solving specific types of tasks
+- Generally more constrained user experience - need to know exact inputs to the flow
+- Require more upfront planning and design work
+
+DOWNSIDES OF AGENTS:
+- Lower successful task completion rate compared to workflows
+- More challenging to instrument, test, and evaluate (don't know what series of steps agent will execute)
+- Less predictable behavior
+
+WHEN TO USE EACH APPROACH:
+Your primary goal as an engineer is to solve problems reliably. Users don't care about fancy agents - they want products that work consistently.
+
+General Recommendation:
+Always focus on implementing workflows where possible, and only resort to agents when they are truly required.
+- Workflows: Provide the reliability and predictability most production applications need
+- Agents: Offer flexibility for scenarios where exact requirements can't be predetermined
+
+Consider workflows when: You have well-defined processes
+Consider agents when: You need to handle unpredictable, varied user requests requiring creative problem-solving
 
