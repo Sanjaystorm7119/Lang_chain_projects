@@ -752,3 +752,65 @@ Beyond Data Analysis:
 Key Advantage:
 Delegate complex computational tasks to Claude while maintaining control over inputs/outputs through Files API. Claude becomes a coding assistant that can actually execute and iterate on solutions.
 
+
+Model Context Protocol (MCP)
+
+MCP is a standard protocol for exposing tools, data sources (resources), and reusable prompts to LLMs through a server-client architecture. Key benefit: same MCP server can be reused across multiple apps and model providers without duplicating integrations.
+
+Core Architecture:
+- MCP Server: Process that implements MCP spec and exposes tools, resources, and prompts. Encapsulates business logic, external API calls, and database access.
+- MCP Client: App hosting a model (or calling model API). Discovers servers, lists capabilities, surfaces tools/resources/prompts to the model, translates between model tool_calls and MCP invocations.
+- Transport: Can use stdio (same machine), HTTP, WebSockets, or other protocols.
+
+Message Types:
+- ListToolsRequest/ListToolsResult: Client asks server "what tools do you have?"
+- CallToolRequest/CallToolResult: Client requests server to run a specific tool
+- ListResourcesRequest/ReadResourceRequest: Client fetches data/information
+- ListPromptsRequest/GetPromptRequest: Client retrieves prompt templates
+
+Key Building Blocks:
+
+1. Tools:
+- Typed operations model can call to "do things" (create tickets, run queries, send emails, etc.)
+- Defined with name, description, input_schema (JSON Schema for parameters)
+- Use Python SDK: @mcp.tool() decorator + type hints auto-generates schemas
+- Example: read_document(doc_id), edit_document(doc_id, old_str, new_str)
+- Best practice: Keep tools small, composable; let model chain multiple calls
+
+2. Resources:
+- Read-only or queryable data exposed via URIs (files, documents, DB rows, API endpoints)
+- Two types: Direct resources (static URIs like docs://documents) and Templated resources (with parameters like docs://documents/{doc_id})
+- SDK parses templated parameters and passes as keyword arguments
+- Return with MIME type hints (application/json, text/plain, etc.)
+- Use case: Document mentions (@doc_id), file browsing, lookups without tool calls
+
+3. Prompts:
+- Named, versioned prompt templates hosted on server + parameterized
+- Return list of user/assistant messages that clients can feed directly to Claude
+- Central place for prompt engineering; teams can update without redeploying clients
+- Example: format_document(doc_id), summarize_report(doc_id)
+
+Project Structure:
+- MCP Server (mcp_server.py): Implements tools, resources, prompts using Python SDK
+- MCP Client (mcp_client.py): Connects to server, provides list_tools(), call_tool(), list_resources(), read_resource(), list_prompts(), get_prompt()
+- Application (main.py): Uses client to get tools/prompts, sends to Claude, processes results
+
+Development Workflow:
+1. Define tools/resources/prompts on server using decorators
+2. Start MCP inspector: mcp dev mcp_server.py
+3. Connect in browser inspector to test tools, resources, prompts manually
+4. Implement client methods to call server
+5. Wire client into application to use with Claude
+
+Best Practices:
+- Keep business logic in server, UI/orchestration in client
+- Write clear tool/resource/prompt descriptions for model understanding
+- Test via inspector before involving Claude
+- Use MCP when multiple apps need same integrations
+- Resources for data, tools for actions, prompts for workflows
+
+Common Patterns:
+- GitHub/GitLab server: tools for repo operations, resources for code browsing
+- Document manager: tools for CRUD, resources for search/listing, prompts for reformatting
+- Data analyst: tools for query execution, resources for schema/metadata, prompts for analysis workflows
+
